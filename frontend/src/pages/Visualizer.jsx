@@ -266,22 +266,24 @@ export default function Visualizer() {
             </div>
           </div>
 
-          {/* Color Tolerance */}
+          {/* Selected Colour */}
           <div className="card">
-            <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem' }}>Colour Tolerance</h4>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
-              <span className="text-muted">Value</span>
-              <span style={{ fontWeight: '700', color: 'var(--primary)' }}>{tolerance}</span>
+            <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem' }}>Selected Colour</h4>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: '52px', height: '52px', borderRadius: 'var(--radius-md)', backgroundColor: selectedColor, border: '2px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', flexShrink: 0 }} />
+              <div>
+                <div style={{ fontWeight: '700', fontFamily: 'monospace' }}>{selectedColor.toUpperCase()}</div>
+                <div className="text-muted" style={{ fontSize: '0.8rem' }}>Click a swatch below</div>
+              </div>
             </div>
-            <input type="range" min="5" max="80" step="5" value={tolerance}
-              onChange={e => setTolerance(Number(e.target.value))}
-              style={{ width: '100%', accentColor: 'var(--primary)' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-              <span>Precise</span><span>Broad</span>
+            <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+              <label className="text-muted">Custom:</label>
+              <input type="color" value={selectedColor} onChange={e => setSelectedColor(e.target.value)}
+                style={{ width: '40px', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px' }} />
             </div>
           </div>
 
-          {/* Edge Barrier Strength */}
+          {/* Object Barrier Strength */}
           <div className="card">
             <h4 style={{ fontWeight: '600', marginBottom: '0.25rem', fontSize: '0.95rem' }}>🛡️ Object Barrier Strength</h4>
             <p className="text-muted" style={{ fontSize: '0.78rem', marginBottom: '0.65rem', lineHeight: 1.5 }}>
@@ -299,20 +301,18 @@ export default function Visualizer() {
             </div>
           </div>
 
-          {/* Selected Colour */}
+          {/* Colour Tolerance */}
           <div className="card">
-            <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem' }}>Selected Colour</h4>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ width: '52px', height: '52px', borderRadius: 'var(--radius-md)', backgroundColor: selectedColor, border: '2px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', flexShrink: 0 }} />
-              <div>
-                <div style={{ fontWeight: '700', fontFamily: 'monospace' }}>{selectedColor.toUpperCase()}</div>
-                <div className="text-muted" style={{ fontSize: '0.8rem' }}>Click a swatch below</div>
-              </div>
+            <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem' }}>Colour Tolerance</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
+              <span className="text-muted">Value</span>
+              <span style={{ fontWeight: '700', color: 'var(--primary)' }}>{tolerance}</span>
             </div>
-            <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-              <label className="text-muted">Custom:</label>
-              <input type="color" value={selectedColor} onChange={e => setSelectedColor(e.target.value)}
-                style={{ width: '40px', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px' }} />
+            <input type="range" min="5" max="80" step="5" value={tolerance}
+              onChange={e => setTolerance(Number(e.target.value))}
+              style={{ width: '100%', accentColor: 'var(--primary)' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+              <span>Precise</span><span>Broad</span>
             </div>
           </div>
 
