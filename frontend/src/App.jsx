@@ -29,7 +29,6 @@ function AppLayout({ children, user, onLogout }) {
           <Link to="/visualizer" className={isActive('/visualizer')}>Visualizer</Link>
           <Link to="/quote" className={isActive('/quote')}>Quotation</Link>
           <Link to="/orders" className={isActive('/orders')}>My Orders</Link>
-          {user?.role === 'Admin' && <Link to="/admin" className={isActive('/admin')}>Admin</Link>}
         </div>
         <div className="nav-user">
           <div className="nav-user-info">
@@ -40,6 +39,26 @@ function AppLayout({ children, user, onLogout }) {
         </div>
       </nav>
       <main className="main-content">
+        {children}
+      </main>
+    </div>
+  );
+}
+
+function AdminLayout({ children, user, onLogout }) {
+  return (
+    <div className="app-container">
+      <nav className="navbar" style={{ backgroundColor: '#1E293B', color: 'white', borderBottom: 'none' }}>
+        <div className="navbar-brand" style={{ color: 'white' }}>🛡️ Admin Panel</div>
+        <div className="nav-user">
+          <div className="nav-user-info">
+            <div className="user-name" style={{ color: 'white' }}>{user?.email || 'Admin'}</div>
+            <div className="user-role" style={{ color: '#94A3B8' }}>System Administrator</div>
+          </div>
+          <button className="btn" onClick={onLogout} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', padding: '0.4rem 1rem', fontSize: '0.85rem' }}>Logout</button>
+        </div>
+      </nav>
+      <main style={{ padding: '2rem', background: '#F8FAFC', minHeight: 'calc(100vh - 64px)' }}>
         {children}
       </main>
     </div>
@@ -87,10 +106,10 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />
+          isAuthenticated ? <Navigate to={user?.role === 'Admin' ? "/admin" : "/"} replace /> : <Login onLogin={handleLogin} />
         } />
         <Route path="/signup" element={
-          isAuthenticated ? <Navigate to="/" replace /> : <Signup />
+          isAuthenticated ? <Navigate to={user?.role === 'Admin' ? "/admin" : "/"} replace /> : <Signup />
         } />
 
         {/* Protected routes */}
@@ -124,14 +143,14 @@ function App() {
         } />
         <Route path="/admin" element={
           <ProtectedRoute isAuthenticated={isAuthenticated && user?.role === 'Admin'}>
-            <AppLayout user={user} onLogout={handleLogout}>
+            <AdminLayout user={user} onLogout={handleLogout}>
               <AdminDashboard />
-            </AppLayout>
+            </AdminLayout>
           </ProtectedRoute>
         } />
 
         {/* Catch all */}
-        <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? (user?.role === 'Admin' ? "/admin" : "/") : "/login"} replace />} />
       </Routes>
     </Router>
   );
