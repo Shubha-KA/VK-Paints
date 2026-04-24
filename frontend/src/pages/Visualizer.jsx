@@ -192,7 +192,7 @@ export default function Visualizer() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 660px', gap: '1.5rem', alignItems: 'start' }}>
 
         {/* Canvas */}
         <div className="card" style={{ padding: '1rem' }}>
@@ -245,7 +245,7 @@ export default function Visualizer() {
         </div>
 
         {/* Controls */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
 
           {/* Tool */}
           <div className="card">
@@ -316,8 +316,8 @@ export default function Visualizer() {
             </div>
           </div>
 
-          {/* Palette — fixed header, scrollable body */}
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          {/* Palette — spans both columns */}
+          <div className="card" style={{ padding: 0, overflow: 'hidden', gridColumn: '1 / -1' }}>
             <div style={{ padding: '0.9rem 1rem 0.6rem', borderBottom: '1px solid var(--border)', background: 'white' }}>
               <h4 style={{ fontWeight: '600', fontSize: '0.95rem', margin: 0 }}>Colour Palette</h4>
             </div>
