@@ -52,11 +52,13 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newRetailer)
       });
-      if (res.ok) {
-        alert('Retailer added');
-        setNewRetailer({ name: '', city: '', email: '', lat: 0, lng: 0, address: '' });
-        fetchData();
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to add retailer');
       }
+      alert('Retailer added');
+      setNewRetailer({ name: '', city: '', email: '', lat: 0, lng: 0, address: '' });
+      fetchData();
     } catch (err) {
       alert('Error: ' + err.message);
     }
@@ -70,11 +72,13 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProduct)
       });
-      if (res.ok) {
-        alert('Product added');
-        setNewProduct({ name: '', type: 'Interior', color: '', price_per_liter: 0, coverage_sqft_per_liter: 100 });
-        fetchData();
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to add product');
       }
+      alert('Product added');
+      setNewProduct({ name: '', type: 'Interior', color: '', price_per_liter: 0, coverage_sqft_per_liter: 100 });
+      fetchData();
     } catch (err) {
       alert('Error: ' + err.message);
     }

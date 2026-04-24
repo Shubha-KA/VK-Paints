@@ -52,7 +52,7 @@ const connectWithRetry = async () => {
     try {
         await sequelize.authenticate();
         console.log('Connected to Database');
-        await sequelize.sync();
+        await sequelize.sync({ alter: true });
         
         if (await Retailer.count() === 0) {
             await Retailer.bulkCreate([

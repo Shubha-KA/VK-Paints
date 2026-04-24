@@ -34,7 +34,7 @@ const connectWithRetry = async () => {
     try {
         await sequelize.authenticate();
         console.log('Connected to Database');
-        await sequelize.sync();
+        await sequelize.sync({ alter: true });
         
         const count = await Product.count();
         if (count === 0) {
