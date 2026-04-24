@@ -1,7 +1,13 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: vk-paints-storage
-provisioner: kubernetes.io/no-provisioner # Change this to your provider (e.g., ebs.csi.aws.com)
+  name: vkpaints-nfs-sc
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: 192.168.1.100 # Change to your NFS Server IP
+  share: /export/vkpaints
 reclaimPolicy: Retain
-volumeBindingMode: WaitForFirstConsumer
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.1
+

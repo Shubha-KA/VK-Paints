@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: order-service-config
-  namespace: vk-paints
+  name: order-config
+  namespace: vkpaints-dev-ns
 data:
   DB_URL: "postgres://postgres:postgres@postgres:5432/order_db"
   RABBITMQ_URL: "amqp://rabbitmq"

@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user-service
-  namespace: vk-paints
+  name: user-deploy
+  namespace: vkpaints-dev-ns
 spec:
   replicas: 1
   selector:
@@ -14,13 +14,13 @@ spec:
         app: user-service
     spec:
       containers:
-      - name: user-service
-        image: user-service:latest
+      - name: user-container
+        image: shubha20/vk-paints_user-service:v1.0.0
         imagePullPolicy: IfNotPresent
         envFrom:
         - configMapRef:
-            name: user-service-config
-        - secretRef:
-            name: user-service-secret
+            name: user-config
+        # - secretRef:
+        #     name: user-service-secret
         ports:
-        - containerPort: 3001
+        - containerPort: 3000

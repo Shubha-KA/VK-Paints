@@ -1,7 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: product-service
+  name: product-deploy
+  namespace: vkpaints-dev-ns
 spec:
   selector:
     matchLabels:
@@ -12,13 +13,13 @@ spec:
         app: product-service
     spec:
       containers:
-      - name: product-service
-        image: product-service:latest
-        imagePullPolicy: Never
-        env:
-        - name: DB_URL
-          value: postgres://postgres:postgres@postgres:5432/product_db
-        - name: RABBITMQ_URL
-          value: amqp://rabbitmq
+      - name: product-container
+        image: shubha20/vk-paints_product-service:v1.0.0
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: product-config
+        # - secretRef:
+        #     name: product-secret
         ports:
         - containerPort: 3000

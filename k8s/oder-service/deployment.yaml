@@ -1,7 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: order-service
+  name: order-deploy
+  namespace: vkpaints-dev-ns
 spec:
   selector:
     matchLabels:
@@ -12,13 +13,13 @@ spec:
         app: order-service
     spec:
       containers:
-      - name: order-service
-        image: order-service:latest
-        imagePullPolicy: Never
-        env:
-        - name: DB_URL
-          value: postgres://postgres:postgres@postgres:5432/order_db
-        - name: RABBITMQ_URL
-          value: amqp://rabbitmq
+      - name: order-container
+        image: shubha20/vk-paints_order-service:v1.0.0
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: order-config
+        # - secretRef:
+        #     name: order-secret
         ports:
         - containerPort: 3000

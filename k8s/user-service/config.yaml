@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: user-service-config
-  namespace: vk-paints
+  namespace: vkpaints-dev-ns
 data:
   DB_URL: "postgres://postgres:postgres@postgres:5432/user_db"
-  ADMIN_EMAIL: "admin@vkpaints.com"
+  ADMIN_EMAIL: "shubhahima2003@gmail.com"

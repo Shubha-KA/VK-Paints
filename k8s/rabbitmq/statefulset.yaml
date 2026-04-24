@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: rabbitmq
-  namespace: vk-paints
+  namespace: vkpaints-dev-ns
 spec:
   serviceName: "rabbitmq"
   replicas: 1
@@ -30,23 +30,8 @@ spec:
       name: rabbitmq-data
     spec:
       accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "vk-paints-storage"
+      storageClassName: "vkpaints-nfs-sc"
       resources:
         requests:
-          storage: 1Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: rabbitmq
-  namespace: vk-paints
-spec:
-  selector:
-    app: rabbitmq
-  ports:
-  - name: amqp
-    port: 5672
-    targetPort: 5672
-  - name: management
-    port: 15672
-    targetPort: 15672
+          storage: 3Gi
+

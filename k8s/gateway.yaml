@@ -2,7 +2,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: vk-paints-gateway
-  namespace: vk-paints
+  namespace: vkpaints-gateway-ns
 spec:
   gatewayClassName: kgateway
   listeners:
@@ -11,79 +11,7 @@ spec:
     port: 80
     allowedRoutes:
       namespaces:
-        from: Same
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: vk-paints-routes
-  namespace: vk-paints
-spec:
-  parentRefs:
-  - name: vk-paints-gateway
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /users
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /
-    backendRefs:
-    - name: user-service
-      port: 80
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /products
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /
-    backendRefs:
-    - name: product-service
-      port: 80
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /quotes
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /
-    backendRefs:
-    - name: quotation-service
-      port: 80
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /orders
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /
-    backendRefs:
-    - name: order-service
-      port: 80
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /retailers
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /
-    backendRefs:
-    - name: retailer-service
-      port: 80
+        from: selector
+        selector:
+          matchLabels:
+            shared-gateway: "true"

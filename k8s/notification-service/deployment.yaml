@@ -1,7 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: notification-service
+  name: notification-deploy
+  namespace: vkpaints-dev-ns
 spec:
   selector:
     matchLabels:
@@ -12,13 +13,13 @@ spec:
         app: notification-service
     spec:
       containers:
-      - name: notification-service
-        image: notification-service:latest
-        imagePullPolicy: Never
-        env:
-        - name: DB_URL
-          value: postgres://postgres:postgres@postgres:5432/notification_db
-        - name: RABBITMQ_URL
-          value: amqp://rabbitmq
+      - name: notification-container
+        image: shubha20/vk-paints_notification-service:v1.0.0
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: notification-config
+        - secretRef:
+            name: notification-secret
         ports:
         - containerPort: 3000
