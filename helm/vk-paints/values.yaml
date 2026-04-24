@@ -1,0 +1,70 @@
+global:
+  namespace: vkpaints-dev-ns
+  gatewayNamespace: vkpaints-gateway-ns
+  storageClassName: vkpaints-nfs-sc
+
+# NFS CSI Settings
+nfs:
+  server: 10.0.1.159
+  share: /var/nfs/vkpaints
+
+postgres:
+  enabled: true
+  image: postgres:15-alpine
+  storage: 3Gi
+  user: postgres
+  password: postgres
+
+rabbitmq:
+  enabled: true
+  image: rabbitmq:3-management-alpine
+  storage: 3Gi
+
+microservices:
+  user:
+    name: user
+    image: shubha20/vk-paints_user-service:v1.0.0
+    port: 3000
+    env:
+      DB_URL: "postgres://postgres:postgres@postgres:5432/user_db"
+      ADMIN_EMAIL: "shubhahima2003@gmail.com"
+    secrets:
+      JWT_SECRET: "supersecret123"
+      ADMIN_PASSWORD: "adminpass123"
+  product:
+    name: product
+    image: shubha20/vk-paints_product-service:v1.0.0
+    port: 3000
+    env:
+      DB_URL: "postgres://postgres:postgres@postgres:5432/product_db"
+  quotation:
+    name: quotation
+    image: shubha20/vk-paints_product-service:v1.0.0 # user used product-service image here in diff
+    port: 3000
+    env:
+      DB_URL: "postgres://postgres:postgres@postgres:5432/quotation_db"
+  order:
+    name: order
+    image: shubha20/vk-paints_order-service:v1.0.0
+    port: 3000
+    env:
+      DB_URL: "postgres://postgres:postgres@postgres:5432/order_db"
+      RABBITMQ_URL: "amqp://rabbitmq"
+  retailer:
+    name: retailer
+    image: shubha20/vk-paints_retailer-service:v1.0.0
+    port: 3000
+    env:
+      DB_URL: "postgres://postgres:postgres@postgres:5432/retailer_db"
+  notification:
+    name: notification
+    image: shubha20/vk-paints_notification-service:v1.0.0
+    port: 3000
+    env:
+      RABBITMQ_URL: "amqp://rabbitmq"
+      SMTP_HOST: "smtp.gmail.com"
+      SMTP_PORT: "587"
+      SMTP_SECURE: "false"
+    secrets:
+      SMTP_USER: "shubhahima2003@gmail.com"
+      SMTP_PASS: "iuyzfdcihcxrjlfk"
