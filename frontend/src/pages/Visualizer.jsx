@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
 
-// Rich color palette - each color has 6 shades from dark to light
 const COLOR_PALETTE = [
   { name: 'Whites & Creams', shades: ['#F5F5F0', '#FFFFF0', '#FFFDD0', '#FAF0E6', '#FFF8DC', '#FAEBD7'] },
   { name: 'Beige & Tan',     shades: ['#8B7355', '#A0845C', '#C4A882', '#D2B48C', '#DEB887', '#F5DEB3'] },
@@ -22,112 +21,115 @@ function hexToRgb(hex) {
   ];
 }
 
-// Euclidean color distance — much more accurate edge detection than per-channel
 function colorDist(r1, g1, b1, r2, g2, b2) {
-  return Math.sqrt(
-    (r1 - r2) ** 2 +
-    (g1 - g2) ** 2 +
-    (b1 - b2) ** 2
-  );
+  return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2);
 }
 
 /**
- * Flood fill that ALWAYS checks against the ORIGINAL image pixels.
- * This prevents edge bleed from spreading into areas that changed due to painting.
- * @param {ImageData} currentData  - what is currently on the canvas (will be mutated)
- * @param {ImageData} originalData - the clean original upload (never mutated, used for boundary checks)
- * @param {number} x, y            - click position
- * @param {string} fillHex         - selected color hex
- * @param {number} tolerance       - max Euclidean distance (0-441)
- * @param {boolean} erase          - if true, restore original pixels instead of painting
+ * SCANLINE flood fill — expands in clean horizontal bands, no oval artifacts.
+ * Always reads boundaries from ORIGINAL image so painted areas don't bleed further.
  */
-function smartFloodFill(currentData, originalData, x, y, fillHex, tolerance, erase = false) {
+function scanlineFloodFill(currentData, originalData, startX, startY, fillHex, tolerance, erase) {
   const { width, height } = currentData;
-  const cur = currentData.data;
+  const cur  = currentData.data;
   const orig = originalData.data;
   const [fr, fg, fb] = hexToRgb(fillHex);
-  const OPACITY = 0.80; // paint opacity (blend factor)
+  const OPACITY = 0.82;
 
-  // Target color taken from ORIGINAL image at click point
-  const startIdx = (y * width + x) * 4;
-  const targetR = orig[startIdx];
-  const targetG = orig[startIdx + 1];
-  const targetB = orig[startIdx + 2];
+  // Target color from original image at click point
+  const si = (startY * width + startX) * 4;
+  const tR = orig[si], tG = orig[si + 1], tB = orig[si + 2];
 
   const visited = new Uint8Array(width * height);
-  const stack = [y * width + x];
+
+  const matches = (x, y) => {
+    if (x < 0 || x >= width || y < 0 || y >= height) return false;
+    const pos = y * width + x;
+    if (visited[pos]) return false;
+    const i = pos * 4;
+    return colorDist(orig[i], orig[i + 1], orig[i + 2], tR, tG, tB) <= tolerance;
+  };
+
+  const paint = (x, y) => {
+    const pos = y * width + x;
+    visited[pos] = 1;
+    const i = pos * 4;
+    if (erase) {
+      cur[i]     = orig[i];
+      cur[i + 1] = orig[i + 1];
+      cur[i + 2] = orig[i + 2];
+      cur[i + 3] = orig[i + 3];
+    } else {
+      cur[i]     = Math.round(orig[i]     * (1 - OPACITY) + fr * OPACITY);
+      cur[i + 1] = Math.round(orig[i + 1] * (1 - OPACITY) + fg * OPACITY);
+      cur[i + 2] = Math.round(orig[i + 2] * (1 - OPACITY) + fb * OPACITY);
+    }
+  };
+
+  // Stack holds [x, y] pairs — scanline style
+  const stack = [[startX, startY]];
 
   while (stack.length > 0) {
-    const pos = stack.pop();
-    if (visited[pos]) continue;
-    visited[pos] = 1;
+    const [sx, sy] = stack.pop();
+    if (!matches(sx, sy)) continue;
 
-    const px = pos % width;
-    const py = (pos - px) / width;
-    const idx = pos * 4;
+    // Scan left to find left edge
+    let lx = sx;
+    while (lx > 0 && matches(lx - 1, sy)) lx--;
 
-    // Compare against ORIGINAL pixel — never the painted one
-    const or_ = orig[idx];
-    const og  = orig[idx + 1];
-    const ob  = orig[idx + 2];
+    // Scan right to find right edge
+    let rx = sx;
+    while (rx < width - 1 && matches(rx + 1, sy)) rx++;
 
-    if (colorDist(or_, og, ob, targetR, targetG, targetB) > tolerance) continue;
+    // Paint the whole scanline from lx to rx
+    for (let x = lx; x <= rx; x++) paint(x, sy);
 
-    if (erase) {
-      // Restore original colour exactly
-      cur[idx]     = or_;
-      cur[idx + 1] = og;
-      cur[idx + 2] = ob;
-      cur[idx + 3] = orig[idx + 3];
-    } else {
-      // Blend fill colour over original (preserves texture/shading)
-      cur[idx]     = Math.round(or_ * (1 - OPACITY) + fr * OPACITY);
-      cur[idx + 1] = Math.round(og  * (1 - OPACITY) + fg * OPACITY);
-      cur[idx + 2] = Math.round(ob  * (1 - OPACITY) + fb * OPACITY);
+    // Add seeds for rows above and below — only where transitions start
+    // This prevents duplicate seeds from being stacked for every pixel
+    let addedAbove = false, addedBelow = false;
+    for (let x = lx; x <= rx; x++) {
+      if (sy > 0) {
+        if (matches(x, sy - 1)) {
+          if (!addedAbove) { stack.push([x, sy - 1]); addedAbove = true; }
+        } else {
+          addedAbove = false;
+        }
+      }
+      if (sy < height - 1) {
+        if (matches(x, sy + 1)) {
+          if (!addedBelow) { stack.push([x, sy + 1]); addedBelow = true; }
+        } else {
+          addedBelow = false;
+        }
+      }
     }
-
-    // Push 4-connected neighbours
-    if (px > 0)         stack.push(pos - 1);
-    if (px < width - 1) stack.push(pos + 1);
-    if (py > 0)         stack.push(pos - width);
-    if (py < height -1) stack.push(pos + width);
   }
 
   return currentData;
 }
 
 export default function Visualizer() {
-  const canvasRef   = useRef(null);
+  const canvasRef    = useRef(null);
   const fileInputRef = useRef(null);
-
-  // Keep a permanent copy of the original image so flood-fill always has clean boundaries
   const originalDataRef = useRef(null);
 
   const [hasImage,      setHasImage]      = useState(false);
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
-  const [tolerance,     setTolerance]     = useState(30);
-  const [mode,          setMode]          = useState('paint'); // 'paint' | 'erase'
+  const [tolerance,     setTolerance]     = useState(25);
+  const [mode,          setMode]          = useState('paint');
   const [isPainting,    setIsPainting]    = useState(false);
 
-  // ─── Load image onto canvas ────────────────────────────────────────────────
   const drawImageOnCanvas = useCallback((img) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const maxW = canvas.parentElement.clientWidth || 800;
     const maxH = 500;
-    let w = img.naturalWidth;
-    let h = img.naturalHeight;
+    let w = img.naturalWidth, h = img.naturalHeight;
     if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
     if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
-
-    canvas.width  = w;
-    canvas.height = h;
-
+    canvas.width = w; canvas.height = h;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0, w, h);
-
-    // Store a permanent copy of the original pixel data
     originalDataRef.current = ctx.getImageData(0, 0, w, h);
     setHasImage(true);
   }, []);
@@ -142,26 +144,22 @@ export default function Visualizer() {
       img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
-    // Reset input so same file can be re-uploaded
     e.target.value = '';
   };
 
   const loadSampleImage = () => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => drawImageOnCanvas(img);
+    img.onload  = () => drawImageOnCanvas(img);
     img.onerror = () => alert('Could not load sample image. Please upload your own.');
     img.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Living_room_at_Knole%2C_the_Cartoon_Gallery.jpg/800px-Living_room_at_Knole%2C_the_Cartoon_Gallery.jpg';
   };
 
-  // ─── Canvas click → flood fill ────────────────────────────────────────────
   const handleCanvasClick = useCallback((e) => {
     if (!hasImage || !originalDataRef.current) return;
-
     const canvas = canvasRef.current;
     const ctx    = canvas.getContext('2d');
     const rect   = canvas.getBoundingClientRect();
-
     const scaleX = canvas.width  / rect.width;
     const scaleY = canvas.height / rect.height;
     const x = Math.round((e.clientX - rect.left) * scaleX);
@@ -169,26 +167,18 @@ export default function Visualizer() {
     if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return;
 
     setIsPainting(true);
-
-    // Work on current painted state
     const currentData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const result = smartFloodFill(
-      currentData,
-      originalDataRef.current,
-      x, y,
-      selectedColor,
-      tolerance,
-      mode === 'erase'
+    const result = scanlineFloodFill(
+      currentData, originalDataRef.current,
+      x, y, selectedColor, tolerance, mode === 'erase'
     );
     ctx.putImageData(result, 0, 0);
     setIsPainting(false);
   }, [hasImage, selectedColor, tolerance, mode]);
 
-  // ─── Reset / Download ─────────────────────────────────────────────────────
   const handleReset = () => {
     if (!originalDataRef.current) return;
-    const canvas = canvasRef.current;
-    canvas.getContext('2d').putImageData(originalDataRef.current, 0, 0);
+    canvasRef.current.getContext('2d').putImageData(originalDataRef.current, 0, 0);
   };
 
   const handleDownload = () => {
@@ -198,28 +188,21 @@ export default function Visualizer() {
     link.click();
   };
 
-  // ─── Cursor style ─────────────────────────────────────────────────────────
-  const canvasCursor = isPainting
-    ? 'wait'
-    : mode === 'erase'
-    ? 'cell'
-    : 'crosshair';
+  const isErase = mode === 'erase';
 
   return (
     <div>
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '1.75rem', fontWeight: '700', letterSpacing: '-0.025em' }}>Paint Visualizer</h2>
         <p className="text-muted" style={{ marginTop: '0.25rem' }}>
-          Upload your room photo · click a wall to paint · click again to erase
+          Upload your room photo · click a wall to paint it · adjust tolerance to fine-tune edges
         </p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem', alignItems: 'start' }}>
 
-        {/* ── Canvas ── */}
+        {/* ── Canvas Area ── */}
         <div className="card" style={{ padding: '1rem' }}>
-
-          {/* Upload drop zone */}
           {!hasImage && (
             <div
               onClick={() => fileInputRef.current.click()}
@@ -238,10 +221,7 @@ export default function Visualizer() {
                 <p style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '1.1rem' }}>Upload Room Image</p>
                 <p className="text-muted" style={{ marginTop: '0.25rem', fontSize: '0.9rem' }}>Click to browse · JPG, PNG, WEBP</p>
               </div>
-              <button
-                className="btn btn-primary"
-                onClick={e => { e.stopPropagation(); fileInputRef.current.click(); }}
-              >
+              <button className="btn btn-primary" onClick={e => { e.stopPropagation(); fileInputRef.current.click(); }}>
                 📁 Browse Files
               </button>
               <p className="text-muted" style={{ fontSize: '0.8rem' }}>— or —</p>
@@ -255,31 +235,26 @@ export default function Visualizer() {
             </div>
           )}
 
-          {/* Canvas */}
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
             style={{
               display: hasImage ? 'block' : 'none',
               width: '100%', height: 'auto',
-              cursor: canvasCursor,
+              cursor: isPainting ? 'wait' : isErase ? 'cell' : 'crosshair',
               borderRadius: 'var(--radius-md)',
-              border: `2px solid ${mode === 'erase' ? '#EF4444' : 'var(--border)'}`,
+              border: `2px solid ${isErase ? '#EF4444' : 'var(--border)'}`,
               transition: 'border-color 0.2s'
             }}
           />
 
-          {/* Action buttons */}
           {hasImage && (
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={() => fileInputRef.current.click()} style={{ fontSize: '0.85rem' }}>
                 📁 Change Image
               </button>
-              <button
-                className="btn"
-                onClick={handleReset}
-                style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.85rem' }}
-              >
+              <button className="btn" onClick={handleReset}
+                style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '0.85rem' }}>
                 ↺ Reset All
               </button>
               <button className="btn btn-secondary" onClick={handleDownload} style={{ fontSize: '0.85rem' }}>
@@ -288,80 +263,68 @@ export default function Visualizer() {
             </div>
           )}
 
-          {/* Tip banner */}
           <div style={{
             marginTop: '0.75rem', padding: '0.6rem 1rem',
-            background: mode === 'erase' ? 'rgba(239,68,68,0.08)' : 'rgba(99,102,241,0.08)',
+            background: isErase ? 'rgba(239,68,68,0.08)' : 'rgba(99,102,241,0.08)',
             borderRadius: 'var(--radius-md)', fontSize: '0.85rem',
-            color: mode === 'erase' ? '#EF4444' : 'var(--primary)', fontWeight: '500'
+            color: isErase ? '#EF4444' : 'var(--primary)', fontWeight: '500'
           }}>
             {!hasImage && '💡 Upload a room photo to get started'}
-            {hasImage && mode === 'paint' && '🎨 Click on any wall or surface to paint it'}
-            {hasImage && mode === 'erase' && '🧹 Click on a painted area to restore original colour'}
+            {hasImage && !isErase && '🎨 Click on any wall to paint. Lower tolerance = tighter edge detection'}
+            {hasImage && isErase  && '🧹 Click on a painted area to restore the original colour'}
           </div>
         </div>
 
-        {/* ── Controls panel ── */}
+        {/* ── Controls Panel ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-          {/* Mode switcher */}
+          {/* Tool */}
           <div className="card">
             <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem' }}>Tool</h4>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                onClick={() => setMode('paint')}
-                style={{
-                  flex: 1, padding: '0.65rem', borderRadius: 'var(--radius-md)',
-                  border: '2px solid',
-                  borderColor: mode === 'paint' ? 'var(--primary)' : 'var(--border)',
-                  background: mode === 'paint' ? 'var(--primary-light)' : 'white',
-                  color: mode === 'paint' ? 'var(--primary)' : 'var(--text-secondary)',
-                  fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer',
-                  transition: 'var(--transition)'
-                }}
-              >
-                🎨 Paint
-              </button>
-              <button
-                onClick={() => setMode('erase')}
-                style={{
-                  flex: 1, padding: '0.65rem', borderRadius: 'var(--radius-md)',
-                  border: '2px solid',
-                  borderColor: mode === 'erase' ? '#EF4444' : 'var(--border)',
-                  background: mode === 'erase' ? 'rgba(239,68,68,0.08)' : 'white',
-                  color: mode === 'erase' ? '#EF4444' : 'var(--text-secondary)',
-                  fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer',
-                  transition: 'var(--transition)'
-                }}
-              >
-                🧹 Erase
-              </button>
+              {[
+                { key: 'paint', label: '🎨 Paint', activeColor: 'var(--primary)', activeBg: 'var(--primary-light)' },
+                { key: 'erase', label: '🧹 Erase', activeColor: '#EF4444',        activeBg: 'rgba(239,68,68,0.08)' }
+              ].map(({ key, label, activeColor, activeBg }) => (
+                <button
+                  key={key}
+                  onClick={() => setMode(key)}
+                  style={{
+                    flex: 1, padding: '0.65rem', borderRadius: 'var(--radius-md)',
+                    border: `2px solid ${mode === key ? activeColor : 'var(--border)'}`,
+                    background: mode === key ? activeBg : 'white',
+                    color: mode === key ? activeColor : 'var(--text-secondary)',
+                    fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer', transition: 'var(--transition)'
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Tolerance */}
           <div className="card">
-            <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem' }}>Selection Sensitivity</h4>
+            <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem' }}>Edge Sensitivity</h4>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', fontSize: '0.85rem' }}>
               <span className="text-muted">Tolerance</span>
-              <span style={{ fontWeight: '600', color: 'var(--primary)' }}>{tolerance}</span>
+              <span style={{ fontWeight: '700', color: 'var(--primary)' }}>{tolerance}</span>
             </div>
             <input
-              type="range" min="5" max="100" step="5"
-              value={tolerance}
+              type="range" min="5" max="100" step="5" value={tolerance}
               onChange={e => setTolerance(Number(e.target.value))}
               style={{ width: '100%', accentColor: 'var(--primary)' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              <span>🎯 Precise edges</span>
+              <span>🎯 Tight edges</span>
               <span>Broad fill 🪣</span>
             </div>
-            <p className="text-muted" style={{ fontSize: '0.78rem', marginTop: '0.5rem' }}>
-              Lower = stops at sharper edges (good for walls next to furniture). Start at 20–35.
+            <p className="text-muted" style={{ fontSize: '0.78rem', marginTop: '0.5rem', lineHeight: 1.5 }}>
+              Keep at <strong>15–30</strong> to stop at furniture edges. Increase only for very uniform walls.
             </p>
           </div>
 
-          {/* Selected Color */}
+          {/* Selected colour preview */}
           <div className="card">
             <h4 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem' }}>Selected Colour</h4>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -382,55 +345,57 @@ export default function Visualizer() {
                 onChange={e => setSelectedColor(e.target.value)}
                 style={{ width: '40px', height: '32px', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px' }}
               />
-              <span className="text-muted" style={{ fontSize: '0.78rem' }}>Pick any colour</span>
+              <span className="text-muted" style={{ fontSize: '0.78rem' }}>Any colour</span>
             </div>
           </div>
 
-          {/* Palette */}
-          <div className="card" style={{ maxHeight: '380px', overflowY: 'auto' }}>
-            <h4 style={{
-              fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem',
-              position: 'sticky', top: 0, background: 'white', paddingBottom: '0.5rem',
-              borderBottom: '1px solid var(--border)'
+          {/* ── Colour Palette — fixed header, scrollable body ── */}
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            {/* Fixed header — outside scroll area so it never moves */}
+            <div style={{
+              padding: '0.9rem 1rem 0.6rem',
+              borderBottom: '1px solid var(--border)',
+              background: 'white'
             }}>
-              Colour Palette
-            </h4>
-            {COLOR_PALETTE.map(group => (
-              <div key={group.name} style={{ marginBottom: '1rem' }}>
-                <p style={{
-                  fontSize: '0.72rem', fontWeight: '600', color: 'var(--text-muted)',
-                  textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem'
-                }}>
-                  {group.name}
-                </p>
-                <div style={{ display: 'flex', gap: '3px' }}>
-                  {group.shades.map(shade => (
-                    <div
-                      key={shade}
-                      onClick={() => { setSelectedColor(shade); if (mode === 'erase') setMode('paint'); }}
-                      title={shade}
-                      style={{
-                        flex: 1, height: '30px', backgroundColor: shade,
-                        borderRadius: '4px', cursor: 'pointer',
-                        border: selectedColor === shade ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.1)',
-                        transform: selectedColor === shade ? 'scaleY(1.25)' : 'scale(1)',
-                        transition: 'all 0.15s ease',
-                        boxShadow: selectedColor === shade ? '0 2px 6px rgba(0,0,0,0.25)' : 'none',
-                      }}
-                    />
-                  ))}
+              <h4 style={{ fontWeight: '600', fontSize: '0.95rem', margin: 0 }}>Colour Palette</h4>
+            </div>
+
+            {/* Scrollable swatches */}
+            <div style={{ maxHeight: '340px', overflowY: 'auto', padding: '0.85rem 1rem 1rem' }}>
+              {COLOR_PALETTE.map(group => (
+                <div key={group.name} style={{ marginBottom: '0.9rem' }}>
+                  <p style={{
+                    fontSize: '0.72rem', fontWeight: '600', color: 'var(--text-muted)',
+                    textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.35rem'
+                  }}>
+                    {group.name}
+                  </p>
+                  <div style={{ display: 'flex', gap: '3px' }}>
+                    {group.shades.map(shade => (
+                      <div
+                        key={shade}
+                        onClick={() => { setSelectedColor(shade); if (mode === 'erase') setMode('paint'); }}
+                        title={shade}
+                        style={{
+                          flex: 1, height: '28px', backgroundColor: shade,
+                          borderRadius: '4px', cursor: 'pointer',
+                          border: selectedColor === shade ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.1)',
+                          transform: selectedColor === shade ? 'scaleY(1.2)' : 'scale(1)',
+                          transition: 'all 0.15s ease',
+                          boxShadow: selectedColor === shade ? '0 2px 6px rgba(0,0,0,0.25)' : 'none',
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
         </div>
       </div>
 
-      <input
-        ref={fileInputRef} type="file" accept="image/*"
-        onChange={handleFileUpload} style={{ display: 'none' }}
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
     </div>
   );
 }
