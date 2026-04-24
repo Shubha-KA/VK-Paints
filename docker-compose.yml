@@ -4,8 +4,8 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: user_db
     ports:
       - "5432:5432"
@@ -39,17 +39,17 @@ services:
   user-service:
     build: ./user-service
     environment:
-      - DB_URL=postgres://postgres:postgres@postgres:5432/user_db
-      - JWT_SECRET=supersecret
-      - ADMIN_EMAIL=admin@vkpaints.com
-      - ADMIN_PASSWORD=adminpass123
+      - DB_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${DB_HOST:-postgres}:${DB_PORT:-5432}/user_db
+      - JWT_SECRET=${JWT_SECRET:-supersecret}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
       - postgres
 
   product-service:
     build: ./product-service
     environment:
-      - DB_URL=postgres://postgres:postgres@postgres:5432/product_db
+      - DB_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${DB_HOST:-postgres}:${DB_PORT:-5432}/product_db
     depends_on:
       - postgres
 
@@ -61,8 +61,8 @@ services:
   order-service:
     build: ./order-service
     environment:
-      - DB_URL=postgres://postgres:postgres@postgres:5432/order_db
-      - RABBITMQ_URL=amqp://rabbitmq
+      - DB_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${DB_HOST:-postgres}:${DB_PORT:-5432}/order_db
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://rabbitmq}
     depends_on:
       - postgres
       - rabbitmq
@@ -70,14 +70,19 @@ services:
   retailer-service:
     build: ./retailer-service
     environment:
-      - DB_URL=postgres://postgres:postgres@postgres:5432/retailer_db
+      - DB_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@${DB_HOST:-postgres}:${DB_PORT:-5432}/retailer_db
     depends_on:
       - postgres
 
   notification-service:
     build: ./notification-service
     environment:
-      - RABBITMQ_URL=amqp://rabbitmq
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://rabbitmq}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_SECURE=${SMTP_SECURE}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
     depends_on:
       - rabbitmq
 

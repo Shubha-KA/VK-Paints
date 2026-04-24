@@ -124,6 +124,7 @@ function App() {
 
         {/* Protected routes */}
         <Route path="/" element={
+          isAuthenticated && user?.role === 'Admin' ? <Navigate to="/admin" replace /> :
           <ProtectedRoute isAuthenticated={isAuthenticated}>
             <AppLayout user={user} onLogout={handleLogout}>
               <Catalog />

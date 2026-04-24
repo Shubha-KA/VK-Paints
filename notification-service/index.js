@@ -2,14 +2,13 @@ const amqp = require('amqplib');
 const nodemailer = require('nodemailer');
 
 async function createTransporter() {
-    const testAccount = await nodemailer.createTestAccount();
     return nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
+        host: process.env.SMTP_HOST || "smtp.ethereal.email",
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === 'true',
         auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
         },
     });
 }
@@ -29,7 +28,7 @@ async function start() {
         await channel.assertQueue('order_notifications');
         
         const transporter = await createTransporter();
-        console.log('Notification Service waiting for messages... (Emails active via Ethereal)');
+        console.log(`Notification Service waiting for messages... (SMTP: ${process.env.SMTP_HOST || "Default"})`);
         
         channel.consume('order_notifications', async (msg) => {
             if (msg !== null) {
@@ -46,7 +45,7 @@ async function start() {
                                    <p>Your order #${data.orderId} has been successfully placed.</p>
                                    ${formatOrderItemsHtml(data.order)}`
                         });
-                        console.log(`[Email Sent to Customer] Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+                        console.log(`[Email Sent to Customer] ID: ${info.messageId}`);
                     } 
                     else if (data.event === 'NOTIFY_RETAILER' && data.email) {
                         info = await transporter.sendMail({
@@ -57,7 +56,7 @@ async function start() {
                                    <p>Please prepare the following items for Order #${data.order.id}:</p>
                                    ${formatOrderItemsHtml(data.order)}`
                         });
-                        console.log(`[Email Sent to Retailer] Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+                        console.log(`[Email Sent to Retailer] ID: ${info.messageId}`);
                     }
                     else if (data.event === 'NOTIFY_CUSTOMER' && data.email) {
                         info = await transporter.sendMail({
@@ -68,7 +67,7 @@ async function start() {
                                    <p>Your order status has been updated to: <strong>${data.order.status}</strong></p>
                                    ${formatOrderItemsHtml(data.order)}`
                         });
-                        console.log(`[Email Sent to Customer] Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+                        console.log(`[Email Sent to Customer] ID: ${info.messageId}`);
                     }
                 } catch(e) {
                     console.error("Failed to send email", e);
