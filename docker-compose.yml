@@ -23,6 +23,12 @@ services:
     build: ./api-gateway
     ports:
       - "3000:3000"
+    environment:
+      - USER_SERVICE_URL=http://user-service:3001
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - QUOTATION_SERVICE_URL=http://quotation-service:3003
+      - ORDER_SERVICE_URL=http://order-service:3004
+      - RETAILER_SERVICE_URL=http://retailer-service:3005
     depends_on:
       - user-service
       - product-service
