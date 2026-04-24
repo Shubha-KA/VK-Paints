@@ -53,7 +53,8 @@ export default function AdminDashboard() {
         body: JSON.stringify(newRetailer)
       });
       if (!res.ok) {
-        const errorData = await res.json();
+        const isJson = res.headers.get("content-type")?.includes("application/json");
+        const errorData = isJson ? await res.json() : { error: await res.text() };
         throw new Error(errorData.error || 'Failed to add retailer');
       }
       alert('Retailer added');
@@ -73,7 +74,8 @@ export default function AdminDashboard() {
         body: JSON.stringify(newProduct)
       });
       if (!res.ok) {
-        const errorData = await res.json();
+        const isJson = res.headers.get("content-type")?.includes("application/json");
+        const errorData = isJson ? await res.json() : { error: await res.text() };
         throw new Error(errorData.error || 'Failed to add product');
       }
       alert('Product added');

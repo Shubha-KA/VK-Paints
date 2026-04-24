@@ -9,7 +9,7 @@ const sequelize = new Sequelize(process.env.DB_URL || 'postgres://postgres:postg
 const Retailer = sequelize.define('Retailer', {
     name: { type: DataTypes.STRING, allowNull: false },
     city: { type: DataTypes.STRING, allowNull: false },
-    email: { type: DataTypes.STRING, allowNull: false },
+    email: { type: DataTypes.STRING, allowNull: true },
     lat: { type: DataTypes.FLOAT, allowNull: false },
     lng: { type: DataTypes.FLOAT, allowNull: false },
     address: { type: DataTypes.STRING }
