@@ -37,7 +37,11 @@ export default function Login({ onLogin }) {
       localStorage.setItem('userEmail', email);
 
       if (onLogin) onLogin(data);
-      navigate('/');
+      if (data.role === 'Admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
