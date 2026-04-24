@@ -11,7 +11,7 @@ spec:
     port: 80
     allowedRoutes:
       namespaces:
-        from: selector
+        from: Selector
         selector:
           matchLabels:
             shared-gateway: "true"
