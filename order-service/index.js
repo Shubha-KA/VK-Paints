@@ -51,6 +51,16 @@ app.get('/:userId', async (req, res) => {
     res.json(orders);
 });
 
-sequelize.sync().then(() => {
-    app.listen(process.env.PORT || 3004, () => console.log('Order Service running'));
-});
+const connectWithRetry = async () => {
+    try {
+        await sequelize.authenticate();
+        console.log('Connected to Database');
+        await sequelize.sync();
+        app.listen(process.env.PORT || 3004, () => console.log('Order Service running'));
+    } catch (err) {
+        console.error('Database connection failed, retrying in 5s...', err.message);
+        setTimeout(connectWithRetry, 5000);
+    }
+};
+
+connectWithRetry();

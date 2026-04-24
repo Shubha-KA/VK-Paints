@@ -30,14 +30,26 @@ app.get('/:id', async (req, res) => {
     else res.status(404).send('Not found');
 });
 
-sequelize.sync().then(async () => {
-    const count = await Product.count();
-    if (count === 0) {
-        await Product.bulkCreate([
-            { name: 'Royal Matt', type: 'Interior', color: 'White', price_per_liter: 500, coverage_sqft_per_liter: 120 },
-            { name: 'WeatherCoat', type: 'Exterior', color: 'Beige', price_per_liter: 650, coverage_sqft_per_liter: 90 },
-            { name: 'Satin Enamel', type: 'Wood/Metal', color: 'Blue', price_per_liter: 400, coverage_sqft_per_liter: 150 }
-        ]);
+const connectWithRetry = async () => {
+    try {
+        await sequelize.authenticate();
+        console.log('Connected to Database');
+        await sequelize.sync();
+        
+        const count = await Product.count();
+        if (count === 0) {
+            await Product.bulkCreate([
+                { name: 'Royal Matt', type: 'Interior', color: 'White', price_per_liter: 500, coverage_sqft_per_liter: 120 },
+                { name: 'WeatherCoat', type: 'Exterior', color: 'Beige', price_per_liter: 650, coverage_sqft_per_liter: 90 },
+                { name: 'Satin Enamel', type: 'Wood/Metal', color: 'Blue', price_per_liter: 400, coverage_sqft_per_liter: 150 }
+            ]);
+        }
+        
+        app.listen(process.env.PORT || 3002, () => console.log('Product Service running'));
+    } catch (err) {
+        console.error('Database connection failed, retrying in 5s...', err.message);
+        setTimeout(connectWithRetry, 5000);
     }
-    app.listen(process.env.PORT || 3002, () => console.log('Product Service running'));
-});
+};
+
+connectWithRetry();

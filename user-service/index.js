@@ -40,6 +40,16 @@ app.post('/login', async (req, res) => {
     }
 });
 
-sequelize.sync().then(() => {
-    app.listen(process.env.PORT || 3001, () => console.log('User Service running'));
-});
+const connectWithRetry = async () => {
+    try {
+        await sequelize.authenticate();
+        console.log('Connected to Database');
+        await sequelize.sync();
+        app.listen(process.env.PORT || 3001, () => console.log('User Service running'));
+    } catch (err) {
+        console.error('Database connection failed, retrying in 5s...', err.message);
+        setTimeout(connectWithRetry, 5000);
+    }
+};
+
+connectWithRetry();
