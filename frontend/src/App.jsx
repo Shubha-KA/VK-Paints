@@ -6,6 +6,7 @@ import Catalog from './pages/Catalog';
 import Visualizer from './pages/Visualizer';
 import Quotation from './pages/Quotation';
 import Orders from './pages/Orders';
+import AdminDashboard from './pages/AdminDashboard';
 
 function ProtectedRoute({ children, isAuthenticated }) {
   if (!isAuthenticated) {
@@ -28,6 +29,7 @@ function AppLayout({ children, user, onLogout }) {
           <Link to="/visualizer" className={isActive('/visualizer')}>Visualizer</Link>
           <Link to="/quote" className={isActive('/quote')}>Quotation</Link>
           <Link to="/orders" className={isActive('/orders')}>My Orders</Link>
+          {user?.role === 'Admin' && <Link to="/admin" className={isActive('/admin')}>Admin</Link>}
         </div>
         <div className="nav-user">
           <div className="nav-user-info">
@@ -117,6 +119,13 @@ function App() {
           <ProtectedRoute isAuthenticated={isAuthenticated}>
             <AppLayout user={user} onLogout={handleLogout}>
               <Orders />
+            </AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <ProtectedRoute isAuthenticated={isAuthenticated && user?.role === 'Admin'}>
+            <AppLayout user={user} onLogout={handleLogout}>
+              <AdminDashboard />
             </AppLayout>
           </ProtectedRoute>
         } />

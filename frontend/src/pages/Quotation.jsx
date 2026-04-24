@@ -115,6 +115,8 @@ export default function Quotation() {
 
     if (itemsToOrder.length === 0) return;
 
+    const userEmail = localStorage.getItem('email');
+
     setOrderLoading(true);
     try {
       const res = await fetch(`${API_BASE}/orders`, {
@@ -122,6 +124,7 @@ export default function Quotation() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: parseInt(userId),
+          userEmail: userEmail,
           retailerId: parseInt(selectedRetailer),
           items: itemsToOrder,
           total_cost: totalCost,

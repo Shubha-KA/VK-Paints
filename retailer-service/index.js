@@ -9,6 +9,7 @@ const sequelize = new Sequelize(process.env.DB_URL || 'postgres://postgres:postg
 const Retailer = sequelize.define('Retailer', {
     name: { type: DataTypes.STRING, allowNull: false },
     city: { type: DataTypes.STRING, allowNull: false },
+    email: { type: DataTypes.STRING, allowNull: false },
     lat: { type: DataTypes.FLOAT, allowNull: false },
     lng: { type: DataTypes.FLOAT, allowNull: false },
     address: { type: DataTypes.STRING }
@@ -16,6 +17,15 @@ const Retailer = sequelize.define('Retailer', {
 
 app.get('/', async (req, res) => {
     res.json(await Retailer.findAll());
+});
+
+app.post('/', async (req, res) => {
+    try {
+        const retailer = await Retailer.create(req.body);
+        res.status(201).json(retailer);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
 });
 
 app.post('/nearest', async (req, res) => {
@@ -46,10 +56,10 @@ const connectWithRetry = async () => {
         
         if (await Retailer.count() === 0) {
             await Retailer.bulkCreate([
-                { name: 'VK Paints Central', city: 'Bangalore', lat: 12.9716, lng: 77.5946, address: 'MG Road, Bangalore' },
-                { name: 'VK Paints Whitefield', city: 'Bangalore', lat: 12.9698, lng: 77.7499, address: 'Whitefield, Bangalore' },
-                { name: 'VK Paints South', city: 'Mumbai', lat: 18.9220, lng: 72.8347, address: 'Colaba, Mumbai' },
-                { name: 'VK Paints NCR', city: 'Delhi', lat: 28.7041, lng: 77.1025, address: 'Connaught Place, Delhi' }
+                { name: 'VK Paints Central', city: 'Bangalore', email: 'central@vkpaints.com', lat: 12.9716, lng: 77.5946, address: 'MG Road, Bangalore' },
+                { name: 'VK Paints Whitefield', city: 'Bangalore', email: 'whitefield@vkpaints.com', lat: 12.9698, lng: 77.7499, address: 'Whitefield, Bangalore' },
+                { name: 'VK Paints South', city: 'Mumbai', email: 'south@vkpaints.com', lat: 18.9220, lng: 72.8347, address: 'Colaba, Mumbai' },
+                { name: 'VK Paints NCR', city: 'Delhi', email: 'ncr@vkpaints.com', lat: 28.7041, lng: 77.1025, address: 'Connaught Place, Delhi' }
             ]);
         }
         

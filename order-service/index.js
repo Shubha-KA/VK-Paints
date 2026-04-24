@@ -33,11 +33,13 @@ connectRabbitMQ();
 app.post('/', async (req, res) => {
     try {
         const order = await Order.create(req.body);
-        if (channel) {
+        if (channel && req.body.userEmail) {
             channel.sendToQueue('order_notifications', Buffer.from(JSON.stringify({
                 event: 'ORDER_PLACED',
                 orderId: order.id,
-                userId: order.userId
+                userId: order.userId,
+                userEmail: req.body.userEmail,
+                order
             })));
         }
         res.status(201).json(order);
@@ -49,6 +51,49 @@ app.post('/', async (req, res) => {
 app.get('/:userId', async (req, res) => {
     const orders = await Order.findAll({ where: { userId: req.params.userId } });
     res.json(orders);
+});
+
+app.get('/', async (req, res) => {
+    res.json(await Order.findAll());
+});
+
+app.post('/:id/notify', async (req, res) => {
+    try {
+        const order = await Order.findByPk(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Not found' });
+        
+        if (channel) {
+            channel.sendToQueue('order_notifications', Buffer.from(JSON.stringify({
+                event: req.body.target === 'RETAILER' ? 'NOTIFY_RETAILER' : 'NOTIFY_CUSTOMER',
+                order,
+                email: req.body.email
+            })));
+        }
+        res.json({ message: 'Notification queued' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/:id/status', async (req, res) => {
+    try {
+        const order = await Order.findByPk(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Not found' });
+        
+        order.status = req.body.status;
+        await order.save();
+
+        if (channel && req.body.userEmail) {
+            channel.sendToQueue('order_notifications', Buffer.from(JSON.stringify({
+                event: 'NOTIFY_CUSTOMER',
+                order,
+                email: req.body.userEmail
+            })));
+        }
+        res.json(order);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 const connectWithRetry = async () => {

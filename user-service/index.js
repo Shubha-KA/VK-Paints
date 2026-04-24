@@ -34,7 +34,16 @@ app.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
         const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
-        res.json({ token, role: user.role, userId: user.id });
+        res.json({ token, role: user.role, userId: user.id, email: user.email });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/', async (req, res) => {
+    try {
+        const users = await User.findAll({ attributes: ['id', 'name', 'email', 'role'] });
+        res.json(users);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
