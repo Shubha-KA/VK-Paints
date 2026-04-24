@@ -4,8 +4,8 @@ metadata:
   name: vkpaints-nfs-sc
 provisioner: nfs.csi.k8s.io
 parameters:
-  server: 192.168.1.100 # Change to your NFS Server IP
-  share: /export/vkpaints
+  server: 10.0.1.159 # Change to your NFS Server IP
+  share: /var/nfs/vkpaints
 reclaimPolicy: Retain
 volumeBindingMode: Immediate
 mountOptions:
