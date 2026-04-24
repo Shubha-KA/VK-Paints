@@ -8,5 +8,4 @@ spec:
     app: postgres
   ports:
     - port: 5432
-  type: ClusterIP
-  ClusterIP: None
+  clusterIP: None
