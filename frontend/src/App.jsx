@@ -46,10 +46,20 @@ function AppLayout({ children, user, onLogout }) {
 }
 
 function AdminLayout({ children, user, onLogout }) {
+  const location = useLocation();
+  const isActive = (path) => location.pathname.startsWith(path) ? 'nav-link active' : 'nav-link';
+
   return (
     <div className="app-container">
       <nav className="navbar" style={{ backgroundColor: '#1E293B', color: 'white', borderBottom: 'none' }}>
-        <div className="navbar-brand" style={{ color: 'white' }}>🛡️ Admin Panel</div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div className="navbar-brand" style={{ color: 'white', marginRight: '2rem' }}>🛡️ Admin Panel</div>
+          <div style={{ display: 'flex', gap: '1.5rem' }}>
+            <Link to="/admin/orders" style={{ color: location.pathname.includes('/orders') ? '#38BDF8' : '#CBD5E1', textDecoration: 'none', fontWeight: '500', fontSize: '0.95rem' }}>Order Management</Link>
+            <Link to="/admin/products" style={{ color: location.pathname.includes('/products') ? '#38BDF8' : '#CBD5E1', textDecoration: 'none', fontWeight: '500', fontSize: '0.95rem' }}>Product Management</Link>
+            <Link to="/admin/retailers" style={{ color: location.pathname.includes('/retailers') ? '#38BDF8' : '#CBD5E1', textDecoration: 'none', fontWeight: '500', fontSize: '0.95rem' }}>Retail Management</Link>
+          </div>
+        </div>
         <div className="nav-user">
           <div className="nav-user-info">
             <div className="user-name" style={{ color: 'white' }}>{user?.email || 'Admin'}</div>
@@ -141,7 +151,8 @@ function App() {
             </AppLayout>
           </ProtectedRoute>
         } />
-        <Route path="/admin" element={
+        <Route path="/admin" element={<Navigate to="/admin/orders" replace />} />
+        <Route path="/admin/:tab" element={
           <ProtectedRoute isAuthenticated={isAuthenticated && user?.role === 'Admin'}>
             <AdminLayout user={user} onLogout={handleLogout}>
               <AdminDashboard />

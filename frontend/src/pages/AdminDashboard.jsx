@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 
 const API_BASE = window.location.hostname === 'localhost' 
   ? 'http://localhost:3000' 
   : `${window.location.protocol}//${window.location.hostname}:3000`;
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('orders');
+  const { tab } = useParams();
+  const activeTab = tab || 'orders';
   
   const [orders, setOrders] = useState([]);
   const [retailers, setRetailers] = useState([]);
@@ -118,16 +120,11 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '2rem' }}>
-      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: '700' }}>Admin Dashboard</h2>
-          <p className="text-muted">Manage Orders, Retailers, and Products</p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-light)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>
-          <button className={`btn ${activeTab === 'orders' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('orders')} style={{ padding: '0.5rem 1rem' }}>Orders</button>
-          <button className={`btn ${activeTab === 'retailers' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('retailers')} style={{ padding: '0.5rem 1rem' }}>Retailers</button>
-          <button className={`btn ${activeTab === 'products' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('products')} style={{ padding: '0.5rem 1rem' }}>Products</button>
-        </div>
+      <div style={{ marginBottom: '2rem' }}>
+        <h2 style={{ fontSize: '1.75rem', fontWeight: '700' }}>
+          {activeTab === 'orders' ? 'Order Management' : activeTab === 'retailers' ? 'Retail Management' : 'Product Management'}
+        </h2>
+        <p className="text-muted">Manage your platform data</p>
       </div>
 
       {activeTab === 'orders' && (
