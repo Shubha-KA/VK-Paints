@@ -77,40 +77,63 @@ export default function Orders() {
         </div>
       ) : orders.length > 0 && (
         <div className="card" style={{ overflow: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
                 <th style={{ padding: '0.85rem 1rem', fontWeight: '600', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order ID</th>
                 <th style={{ padding: '0.85rem 1rem', fontWeight: '600', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
-                <th style={{ padding: '0.85rem 1rem', fontWeight: '600', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Liters</th>
+                <th style={{ padding: '0.85rem 1rem', fontWeight: '600', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Products</th>
+                <th style={{ padding: '0.85rem 1rem', fontWeight: '600', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Labour</th>
                 <th style={{ padding: '0.85rem 1rem', fontWeight: '600', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Cost</th>
                 <th style={{ padding: '0.85rem 1rem', fontWeight: '600', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
               </tr>
             </thead>
             <tbody>
-              {orders.map(o => (
-                <tr key={o.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--primary-light)'}
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                  <td style={{ padding: '1rem', fontWeight: '600', color: 'var(--primary)' }}>#{o.id}</td>
-                  <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{formatDate(o.createdAt)}</td>
-                  <td style={{ padding: '1rem' }}>{o.liters} L</td>
-                  <td style={{ padding: '1rem', fontWeight: '700' }}>₹{o.total_cost?.toLocaleString()}</td>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{
-                      backgroundColor: getStatusColor(o.status) + '18',
-                      color: getStatusColor(o.status),
-                      padding: '0.3rem 0.85rem',
-                      borderRadius: '9999px',
-                      fontWeight: '600',
-                      fontSize: '0.8rem',
-                      letterSpacing: '0.02em'
-                    }}>
-                      {o.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {orders.map(o => {
+                const isLegacy = !o.items;
+                return (
+                  <tr key={o.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--primary-light)'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <td style={{ padding: '1rem', fontWeight: '600', color: 'var(--primary)' }}>#{o.id}</td>
+                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{formatDate(o.createdAt)}</td>
+                    <td style={{ padding: '1rem' }}>
+                      {isLegacy ? (
+                        <span>Legacy Order ({o.liters} L)</span>
+                      ) : (
+                        <div>
+                          {o.items.map((item, i) => (
+                            <div key={i} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                              • {item.name} ({item.liters} L)
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      {o.requires_labour ? (
+                        <span style={{ color: '#047857', fontWeight: '600', fontSize: '0.85rem' }}>✓ Requested</span>
+                      ) : (
+                        <span style={{ color: '#9CA3AF', fontSize: '0.85rem' }}>Not Needed</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: '700' }}>₹{o.total_cost?.toLocaleString()}</td>
+                    <td style={{ padding: '1rem' }}>
+                      <span style={{
+                        backgroundColor: getStatusColor(o.status) + '18',
+                        color: getStatusColor(o.status),
+                        padding: '0.3rem 0.85rem',
+                        borderRadius: '9999px',
+                        fontWeight: '600',
+                        fontSize: '0.8rem',
+                        letterSpacing: '0.02em'
+                      }}>
+                        {o.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

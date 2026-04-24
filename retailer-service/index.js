@@ -8,6 +8,7 @@ const sequelize = new Sequelize(process.env.DB_URL || 'postgres://postgres:postg
 
 const Retailer = sequelize.define('Retailer', {
     name: { type: DataTypes.STRING, allowNull: false },
+    city: { type: DataTypes.STRING, allowNull: false },
     lat: { type: DataTypes.FLOAT, allowNull: false },
     lng: { type: DataTypes.FLOAT, allowNull: false },
     address: { type: DataTypes.STRING }
@@ -45,8 +46,10 @@ const connectWithRetry = async () => {
         
         if (await Retailer.count() === 0) {
             await Retailer.bulkCreate([
-                { name: 'City Paints', lat: 40.7128, lng: -74.0060, address: 'NY Center' },
-                { name: 'Metro Hardware', lat: 34.0522, lng: -118.2437, address: 'LA Metro' }
+                { name: 'VK Paints Central', city: 'Bangalore', lat: 12.9716, lng: 77.5946, address: 'MG Road, Bangalore' },
+                { name: 'VK Paints Whitefield', city: 'Bangalore', lat: 12.9698, lng: 77.7499, address: 'Whitefield, Bangalore' },
+                { name: 'VK Paints South', city: 'Mumbai', lat: 18.9220, lng: 72.8347, address: 'Colaba, Mumbai' },
+                { name: 'VK Paints NCR', city: 'Delhi', lat: 28.7041, lng: 77.1025, address: 'Connaught Place, Delhi' }
             ]);
         }
         
