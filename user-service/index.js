@@ -54,6 +54,18 @@ const connectWithRetry = async () => {
         await sequelize.authenticate();
         console.log('Connected to Database');
         await sequelize.sync();
+
+        const adminEmail = process.env.ADMIN_EMAIL;
+        const adminPassword = process.env.ADMIN_PASSWORD;
+        if (adminEmail && adminPassword) {
+            const adminExists = await User.findOne({ where: { email: adminEmail } });
+            if (!adminExists) {
+                const hashedPassword = await bcrypt.hash(adminPassword, 10);
+                await User.create({ name: 'System Admin', email: adminEmail, password: hashedPassword, role: 'Admin' });
+                console.log('Default Admin user created from ENV variables.');
+            }
+        }
+
         app.listen(process.env.PORT || 3001, () => console.log('User Service running'));
     } catch (err) {
         console.error('Database connection failed, retrying in 5s...', err.message);
