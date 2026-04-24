@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: user_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - user-service
+      - product-service
+      - quotation-service
+      - order-service
+      - retailer-service
+
+  user-service:
+    build: ./user-service
+    environment:
+      - DB_URL=postgres://postgres:postgres@postgres:5432/user_db
+      - JWT_SECRET=supersecret
+    depends_on:
+      - postgres
+
+  product-service:
+    build: ./product-service
+    environment:
+      - DB_URL=postgres://postgres:postgres@postgres:5432/product_db
+    depends_on:
+      - postgres
+
+  quotation-service:
+    build: ./quotation-service
+    environment:
+      - PORT=3003
+
+  order-service:
+    build: ./order-service
+    environment:
+      - DB_URL=postgres://postgres:postgres@postgres:5432/order_db
+      - RABBITMQ_URL=amqp://rabbitmq
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  retailer-service:
+    build: ./retailer-service
+    environment:
+      - DB_URL=postgres://postgres:postgres@postgres:5432/retailer_db
+    depends_on:
+      - postgres
+
+  notification-service:
+    build: ./notification-service
+    environment:
+      - RABBITMQ_URL=amqp://rabbitmq
+    depends_on:
+      - rabbitmq
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+
+volumes:
+  pgdata:

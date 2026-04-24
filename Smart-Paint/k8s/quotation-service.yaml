@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quotation-service
+spec:
+  selector:
+    matchLabels:
+      app: quotation-service
+  template:
+    metadata:
+      labels:
+        app: quotation-service
+    spec:
+      containers:
+      - name: quotation-service
+        image: quotation-service:latest
+        imagePullPolicy: Never
+        env:
+        - name: DB_URL
+          value: postgres://postgres:postgres@postgres:5432/quotation_db
+        - name: RABBITMQ_URL
+          value: amqp://rabbitmq
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quotation-service
+spec:
+  selector:
+    app: quotation-service
+  ports:
+  - port: 80
+    targetPort: 3000
