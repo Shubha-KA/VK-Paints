@@ -4,8 +4,4 @@ metadata:
   name: vkpaints-dev-ns
   labels:
     shared-gateway: "true"
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: vkpaints-gateway-ns
+
