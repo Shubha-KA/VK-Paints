@@ -1,0 +1,7 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: vk-paints-storage
+provisioner: kubernetes.io/no-provisioner # Change this to your provider (e.g., ebs.csi.aws.com)
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer

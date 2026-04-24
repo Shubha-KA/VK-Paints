@@ -60,7 +60,7 @@ export default function Login({ onLogin }) {
           <div className="auth-logo">
             <div className="logo-icon">🎨</div>
             <h1>Welcome Back</h1>
-            <p>Sign in to Smart Paint Platform</p>
+            <p>Sign in to V K Paints Platform</p>
           </div>
 
           {error && <div className="auth-error">{error}</div>}

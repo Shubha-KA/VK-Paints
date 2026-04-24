@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: retailer-service-config
+  namespace: vk-paints
+data:
+  DB_URL: "postgres://postgres:postgres@postgres:5432/retailer_db"

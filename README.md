@@ -1,4 +1,4 @@
-# Smart Paint Selection & Ordering Platform
+# V K Paints Selection & Ordering Platform
 
 This is a complete end-to-end production-ready web application designed with a microservices architecture.
 

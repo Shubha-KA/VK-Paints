@@ -145,7 +145,7 @@ export default function Quotation() {
     const doc = new jsPDF();
     doc.setFontSize(20);
     doc.setTextColor(4, 120, 87);
-    doc.text('Smart Paint Quotation', 14, 22);
+    doc.text('V K Paints Quotation', 14, 22);
     
     doc.setFontSize(11);
     doc.setTextColor(100);

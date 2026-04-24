@@ -65,7 +65,7 @@ export default function Signup() {
           <div className="auth-logo">
             <div className="logo-icon">🎨</div>
             <h1>Create Account</h1>
-            <p>Join Smart Paint and start ordering</p>
+            <p>Join V K Paints and start ordering</p>
           </div>
 
           {error && <div className="auth-error">{error}</div>}

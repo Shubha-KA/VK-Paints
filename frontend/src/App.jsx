@@ -23,7 +23,7 @@ function AppLayout({ children, user, onLogout }) {
   return (
     <div className="app-container">
       <nav className="navbar">
-        <Link to="/" className="navbar-brand">🎨 Smart Paint</Link>
+        <Link to="/" className="navbar-brand">🎨 V K Paints</Link>
         <div className="nav-links">
           <Link to="/" className={isActive('/')}>Catalog</Link>
           <Link to="/visualizer" className={isActive('/visualizer')}>Visualizer</Link>

@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quotation-service-config
+  namespace: vk-paints
+data:
+  PORT: "3003"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quotation-service
+  namespace: vk-paints
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quotation-service
+  template:
+    metadata:
+      labels:
+        app: quotation-service
+    spec:
+      containers:
+      - name: quotation-service
+        image: quotation-service:latest
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: quotation-service-config
+        ports:
+        - containerPort: 3003
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quotation-service
+  namespace: vk-paints
+spec:
+  selector:
+    app: quotation-service
+  ports:
+  - port: 80
+    targetPort: 3003
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: quotation-service-route
+  namespace: vk-paints
+spec:
+  parentRefs:
+  - name: vk-paints-gateway
+    namespace: vk-paints
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /quotes
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - name: quotation-service
+      port: 80

@@ -1,0 +1,23 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: quotation-service-route
+  namespace: vk-paints
+spec:
+  parentRefs:
+  - name: vk-paints-gateway
+    namespace: vk-paints
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /quotes
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - name: quotation-service
+      port: 80
