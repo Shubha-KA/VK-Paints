@@ -23,11 +23,11 @@ rabbitmq:
 microservices:
   frontend:
     name: frontend
-    image: shubha20/vk-paints_frontend:v1.0.0
+    image: shubha20/vk-paints_frontend:v1.1.0
     port: 80
   user:
     name: user
-    image: shubha20/vk-paints_user-service:v1.0.0
+    image: shubha20/vk-paints_user-service:v1.1.0
     port: 3000
     env:
       DB_URL: "postgres://postgres:postgres@postgres:5432/user_db"
@@ -37,32 +37,32 @@ microservices:
       ADMIN_PASSWORD: "adminpass123"
   product:
     name: product
-    image: shubha20/vk-paints_product-service:v1.0.0
+    image: shubha20/vk-paints_product-service:v1.1.0
     port: 3000
     env:
       DB_URL: "postgres://postgres:postgres@postgres:5432/product_db"
   quotation:
     name: quotation
-    image: shubha20/vk-paints_product-service:v1.0.0 # user used product-service image here in diff
+    image: shubha20/vk-paints_quotation-service:v1.1.0
     port: 3000
     env:
       DB_URL: "postgres://postgres:postgres@postgres:5432/quotation_db"
   order:
     name: order
-    image: shubha20/vk-paints_order-service:v1.0.0
+    image: shubha20/vk-paints_order-service:v1.1.0
     port: 3000
     env:
       DB_URL: "postgres://postgres:postgres@postgres:5432/order_db"
       RABBITMQ_URL: "amqp://rabbitmq"
   retailer:
     name: retailer
-    image: shubha20/vk-paints_retailer-service:v1.0.0
+    image: shubha20/vk-paints_retailer-service:v1.1.0
     port: 3000
     env:
       DB_URL: "postgres://postgres:postgres@postgres:5432/retailer_db"
   notification:
     name: notification
-    image: shubha20/vk-paints_notification-service:v1.0.0
+    image: shubha20/vk-paints_notification-service:v1.1.0
     port: 3000
     env:
       RABBITMQ_URL: "amqp://rabbitmq"
