@@ -1,0 +1,141 @@
+name: Reusable Build, Scan, Push (DEV)
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: 'Name of the microservice'
+        required: true
+        type: string
+    secrets:
+      ORG_GH_TOKEN:
+        description: 'GitHub PAT with repo permissions for updating Helm charts'
+        required: true
+      SMTP_USERNAME:
+        required: true
+      SMTP_PASSWORD:
+        required: true
+      SLACK_WEBHOOK:
+        required: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/vkpaints-${{ inputs.service_name }}
+
+jobs:
+  build-scan-push:
+    name: Build, Trivy Scan, and Push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Get Short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.vars.outputs.sha_short }}
+            type=raw,value=latest
+
+      - name: Build Docker Image (Local for scanning)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: local-image:latest
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'local-image:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Push Docker Image to GHCR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  update-helm:
+    name: Update Helm Chart (Dev Values)
+    needs: build-scan-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short=7 ${{ github.sha }})" >> $GITHUB_OUTPUT
+
+      - name: Checkout Helm Chart Repo
+        uses: actions/checkout@v4
+        with:
+          repository: VK-Paints/vkpaints-helm-chart
+          token: ${{ secrets.ORG_GH_TOKEN }}
+          path: helm-repo
+
+      - name: Update values-dev.yaml
+        run: |
+          cd helm-repo
+          # Assuming structure: charts/<service_name>/values-dev.yaml
+          # We use yq (pre-installed on ubuntu-latest runners) to update the image tag
+          yq -i '.image.tag = "${{ steps.vars.outputs.sha_short }}"' charts/${{ inputs.service_name }}/values-dev.yaml
+          
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add charts/${{ inputs.service_name }}/values-dev.yaml
+          git commit -m "Auto-update ${{ inputs.service_name }} dev image to ${{ steps.vars.outputs.sha_short }}" || echo "No changes to commit"
+          git push
+
+  notify-result:
+    name: Send Notification
+    needs: [build-scan-push, update-helm]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Workflow Repo (for action access)
+        uses: actions/checkout@v4
+        with:
+          repository: VK-Paints/vkpaints-workflow
+
+      - name: Send Notification
+        uses: ./.github/actions/notify
+        with:
+          status: ${{ (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) && 'failure' || 'success' }}
+          pipeline_name: 'Dev Build, Scan, & Deploy'
+          repository_name: ${{ github.repository }}
+          reason_or_message: 'Results: Build/Scan [${{ needs.build-scan-push.result }}], Helm Update [${{ needs.update-helm.result }}]'
+          author: ${{ github.actor }}
+          smtp_username: ${{ secrets.SMTP_USERNAME }}
+          smtp_password: ${{ secrets.SMTP_PASSWORD }}
+          mail_from: 'actions@vkpaints.com'
+          mail_to: ${{ github.actor }}@users.noreply.github.com
+          slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
+          workflow_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          report_url: '${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}'

@@ -1,0 +1,90 @@
+name: Reusable PR Scans (SonarQube & Snyk)
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: 'Name of the microservice'
+        required: true
+        type: string
+    secrets:
+      SONAR_TOKEN:
+        required: true
+      SNYK_TOKEN:
+        required: true
+      SMTP_USERNAME:
+        required: true
+      SMTP_PASSWORD:
+        required: true
+      SLACK_WEBHOOK:
+        required: true
+
+jobs:
+  sonar-scan:
+    name: SonarQube Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=VK-Paints_${{ inputs.service_name }}
+            -Dsonar.organization=vk-paints
+
+  snyk-scan:
+    name: Snyk Vulnerability Scan
+    needs: sonar-scan # Only runs if SonarQube passes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  notify-result:
+    name: Send Notification
+    needs: [sonar-scan, snyk-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Workflow Repo (for action access)
+        uses: actions/checkout@v4
+        with:
+          repository: VK-Paints/vkpaints-workflow
+
+      - name: Send Notification
+        uses: ./.github/actions/notify
+        with:
+          status: ${{ (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) && 'failure' || 'success' }}
+          pipeline_name: 'PR Scans (Sonar & Snyk)'
+          repository_name: ${{ github.repository }}
+          reason_or_message: 'Scan results: SonarQube [${{ needs.sonar-scan.result }}], Snyk [${{ needs.snyk-scan.result }}]'
+          author: ${{ github.actor }}
+          smtp_username: ${{ secrets.SMTP_USERNAME }}
+          smtp_password: ${{ secrets.SMTP_PASSWORD }}
+          mail_from: 'actions@vkpaints.com'
+          mail_to: ${{ github.actor }}@users.noreply.github.com
+          slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
+          workflow_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          report_url: '${{ github.server_url }}/${{ github.repository }}/pull/${{ github.event.pull_request.number }}'

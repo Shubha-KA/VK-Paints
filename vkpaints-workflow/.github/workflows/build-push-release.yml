@@ -1,0 +1,53 @@
+name: Reusable Build and Push (RELEASE)
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: 'Name of the microservice'
+        required: true
+        type: string
+    secrets:
+      ORG_GH_TOKEN:
+        description: 'GitHub PAT'
+        required: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/vkpaints-${{ inputs.service_name }}
+
+jobs:
+  build-and-push-release:
+    name: Build and Push Release Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # This automatically creates a tag based on the GitHub release tag (e.g., v1.0.0)
+          tags: |
+            type=semver,pattern={{version}}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
