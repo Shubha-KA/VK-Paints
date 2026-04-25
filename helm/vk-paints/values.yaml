@@ -21,6 +21,10 @@ rabbitmq:
   storage: 3Gi
 
 microservices:
+  frontend:
+    name: frontend
+    image: shubha20/vk-paints_frontend:v1.0.0
+    port: 80
   user:
     name: user
     image: shubha20/vk-paints_user-service:v1.0.0

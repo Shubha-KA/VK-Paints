@@ -78,14 +78,21 @@ spec:
   rules:
   - matches:
     - path:
+        {{- if eq $key "frontend" }}
+        type: PathPrefix
+        value: /
+        {{- else }}
         type: PathPrefix
         value: /{{ $key }}{{ if eq $key "quotation" }}s{{ end }}
+        {{- end }}
+    {{- if ne $key "frontend" }}
     filters:
     - type: URLRewrite
       urlRewrite:
         path:
           type: ReplacePrefixMatch
           replacePrefixMatch: /
+    {{- end }}
     backendRefs:
     - name: {{ $key }}-service
       port: 80
