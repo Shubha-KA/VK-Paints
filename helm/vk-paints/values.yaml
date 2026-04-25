@@ -28,7 +28,7 @@ microservices:
   user:
     name: user
     image: shubha20/vk-paints_user-service:v1.1.0
-    port: 3000
+    port: 3001
     env:
       DB_URL: "postgres://postgres:postgres@postgres:5432/user_db"
       ADMIN_EMAIL: "shubhahima2003@gmail.com"
@@ -38,26 +38,26 @@ microservices:
   product:
     name: product
     image: shubha20/vk-paints_product-service:v1.1.0
-    port: 3000
+    port: 3002
     env:
       DB_URL: "postgres://postgres:postgres@postgres:5432/product_db"
   quotation:
     name: quotation
     image: shubha20/vk-paints_quotation-service:v1.1.0
-    port: 3000
+    port: 3003
     env:
       DB_URL: "postgres://postgres:postgres@postgres:5432/quotation_db"
   order:
     name: order
     image: shubha20/vk-paints_order-service:v1.1.0
-    port: 3000
+    port: 3004
     env:
       DB_URL: "postgres://postgres:postgres@postgres:5432/order_db"
       RABBITMQ_URL: "amqp://rabbitmq"
   retailer:
     name: retailer
     image: shubha20/vk-paints_retailer-service:v1.1.0
-    port: 3000
+    port: 3005
     env:
       DB_URL: "postgres://postgres:postgres@postgres:5432/retailer_db"
   notification:

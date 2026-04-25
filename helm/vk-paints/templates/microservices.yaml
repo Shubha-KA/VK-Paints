@@ -81,9 +81,12 @@ spec:
         {{- if eq $key "frontend" }}
         type: PathPrefix
         value: /
+        {{- else if eq $key "quotation" }}
+        type: PathPrefix
+        value: /quotes
         {{- else }}
         type: PathPrefix
-        value: /{{ $key }}{{ if eq $key "quotation" }}s{{ end }}
+        value: /{{ $key }}s
         {{- end }}
     {{- if ne $key "frontend" }}
     filters:
