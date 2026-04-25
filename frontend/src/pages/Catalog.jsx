@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000' 
-  : `${window.location.protocol}//${window.location.hostname}:3000`;
+const API_BASE = '';
 
 export default function Catalog() {
   const [products, setProducts] = useState([]);

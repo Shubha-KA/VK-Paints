@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const API_BASE = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000' 
-  : `${window.location.protocol}//${window.location.hostname}:3000`;
+const API_BASE = '';
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);

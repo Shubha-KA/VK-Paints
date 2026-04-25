@@ -3,9 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-const API_BASE = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000' 
-  : `${window.location.protocol}//${window.location.hostname}:3000`;
+const API_BASE = '';
 
 export default function Quotation() {
   const location = useLocation();
