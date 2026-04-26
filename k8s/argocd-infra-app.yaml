@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vk-paints-infra
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/VK-Paints/vkpaints-helm-charts.git'
+    targetRevision: main
+    path: helm/vk-paints
+    helm:
+      # We use the same chart but we can toggle infrastructure components if needed
+      # For now, it will ensure Postgres, RabbitMQ, and Storage are healthy
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: vk-paints-infra
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
